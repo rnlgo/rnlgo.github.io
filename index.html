@@ -1,0 +1,109 @@
+---
+layout: page
+title: Exécuter le programme
+---
+
+<script src="{{ '/assets/skulpt.min.js' | relative_url }}"></script>
+<script src="{{ '/assets/skulpt-stdlib.js' | relative_url }}"></script>
+
+<script>
+addEventListener('load', function() {
+    on_algo_changed();
+    Sk.configure({
+        __future__: Sk.python3
+    });
+    let xhr = new XMLHttpRequest();
+    xhr.onload = function() {
+        window.py_module = eval(Sk.compile(xhr.responseText).code)(); // on charge le code Python
+        document.getElementById('span_chargement').outerHTML = ""; // on supprime le "Chargement..."
+    };
+    xhr.open("get", "{{ '/assets/CODE.py' | relative_url }}");
+    xhr.send();
+});
+function run() {
+    const fonctions = {
+        rot13: [py_module.rot13, py_module.rot13],
+        cesar: [py_module.cesar, py_module.cesar_decode],
+        vigenere: [py_module.code_vigenere, py_module.code_vigenere_decode],
+        polybe: [py_module.code_polybe, py_module.code_polybe_decode],
+        polybe_variante: [py_module.code_polybe_variante, py_module.code_polybe_variante_decode],
+    };
+    let algo = document.getElementById('algo').value;
+    let fonction = fonctions[algo][document.querySelector('[value=decode]').checked ? 1 : 0];
+    let result;
+    try {
+        if (algo == 'rot13') {
+            result = fonction.func_code.call(fonction, [new Sk.builtin.str(document.getElementById('message').value)], {});
+        } else {
+            result = fonction.func_code.call(fonction, [new Sk.builtin.str(document.getElementById('message').value), new Sk.builtin.str(document.getElementById('cle').value)], {});
+        }
+    } catch (e) {
+        alert("Impossible de crypter/décrypter ce message.");
+        return;
+    }
+    document.getElementById('result').textContent = result.v;
+}
+function on_algo_changed() {
+    document.getElementById('label_cle').style.display = (document.getElementById('algo').value == 'rot13' ? 'none' : 'initial')
+}
+</script>
+
+<style>
+label {
+    display: block;
+}
+select, input:not([type=radio]), textarea {
+    display: block;
+    width: 100%;
+}
+pre {
+    word-break: break-all; /* faire un retour à la ligne automatique */
+    white-space: pre-wrap;
+}
+</style>
+
+<noscript><span style="color: red">Le javascript est requis pour cette page.</span></noscript>
+
+<span id="span_chargement" style="color: green">Chargement...</span>
+
+<div>
+
+<label>
+Algorithme :
+<select id="algo" name="algo" onchange="on_algo_changed()">
+<option value="rot13">ROT13</option>
+<option value="cesar">César</option>
+<option value="vigenere">Vigenère</option>
+<option value="polybe">Polybe</option>
+<option value="polybe_variante">Polybe (variante)</option>
+</select>
+</label>
+<br/>
+
+Mode :<br/>
+<label style="display: inline"><input type="radio" id="mode" name="mode" value="encode" checked> Crypter</label>
+<label style="display: inline"><input type="radio" id="mode" name="mode" value="decode"> Décrypter</label>
+<br/>
+<br/>
+
+<label id="label_cle">
+Clé :
+<input type="text" id="cle" name="cle" value="1" oninput="">
+<br/>
+</label>
+
+<label>
+Message :
+<textarea id="message" name="message"></textarea>
+</label>
+<br/>
+
+<button id="buttonRun" onclick="run();">Exécuter !</button>
+</div>
+
+<br/>
+
+<h3>Résultat</h3>
+<pre id="result">
+Cliquez sur Exécuter pour voir le résultat.
+</pre>
